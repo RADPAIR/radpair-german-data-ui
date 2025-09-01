@@ -1,0 +1,22 @@
+# RADPAIR German Backend Requirements
+# Python 3.8+
+
+# Core dependencies
+google-genai>=0.1.0
+google-generativeai>=0.3.0  # For polish fallback
+numpy>=1.24.0
+python-dotenv>=1.0.0
+
+# Web framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+websockets>=11.0
+python-multipart>=0.0.6
+
+# Audio processing
+scipy>=1.10.0
+wave
+
+# Utilities
+aiofiles>=23.0.0
+typing-extensions>=4.8.0

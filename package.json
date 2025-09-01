@@ -1,0 +1,32 @@
+{
+  "name": "radpair-german-data-ui",
+  "version": "1.0.0",
+  "description": "RADPAIR German Medical Transcription UI",
+  "main": "frontend/index.html",
+  "scripts": {
+    "dev": "npx serve frontend -p 3000",
+    "build": "echo 'Static site - no build required'",
+    "start": "npx serve frontend -p $PORT"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RADPAIR/radpair-german-data-ui.git"
+  },
+  "keywords": [
+    "medical",
+    "transcription",
+    "german",
+    "radpair",
+    "gemini",
+    "ai"
+  ],
+  "author": "RADPAIR",
+  "license": "PROPRIETARY",
+  "bugs": {
+    "url": "https://github.com/RADPAIR/radpair-german-data-ui/issues"
+  },
+  "homepage": "https://github.com/RADPAIR/radpair-german-data-ui#readme",
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
