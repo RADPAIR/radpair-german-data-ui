@@ -20,9 +20,7 @@ RUN pip install -r requirements.txt
 # App source
 COPY . /app/backend
 
-# Cloud Run provides $PORT
-ENV PORT=8080
 EXPOSE 8080
 
 # Start using uvicorn
-CMD ["uvicorn", "server_radpair:app", "--host", "0.0.0.0", "--port", "${PORT}"]
+CMD ["uvicorn", "server_radpair:app", "--host", "0.0.0.0", "--port", "8080"]
