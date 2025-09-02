@@ -66,13 +66,14 @@ radpair-german-data-ui/
 │   └── src/                 # Core components
 │       └── core_components_audio_german.py
 ├── frontend/                 # Vercel static site root
-│   ├── RADPAIR-LOGO-WHITE.png
 │   ├── package.json
-│   ├── index.html
-│   ├── app.js
-│   ├── styles.css
-│   └── api/                 # Vercel serverless functions
-│   └── config.js            # Exposes runtime WS URL
+│   ├── public/             # Output directory for Vercel
+│   │   ├── index.html
+│   │   ├── app.js
+│   │   ├── styles.css
+│   │   └── RADPAIR-LOGO-WHITE.png
+│   └── api/                # Vercel serverless functions
+│       └── config.js       # Exposes runtime WS URL
 ├── vercel.json              # (deprecated) leave empty or remove; use Root Directory = frontend
 └── .env.example             # Environment template
 ```

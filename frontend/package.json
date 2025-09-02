@@ -2,11 +2,11 @@
   "name": "radpair-german-data-ui",
   "version": "1.0.0",
   "description": "RADPAIR German Medical Transcription UI",
-  "main": "index.html",
+  "main": "public/index.html",
   "scripts": {
-    "dev": "npx serve . -p 3000",
+    "dev": "npx serve public -p 3000",
     "build": "echo 'Static site - no build required'",
-    "start": "npx serve . -p $PORT"
+    "start": "npx serve public -p $PORT"
   },
   "repository": {
     "type": "git",

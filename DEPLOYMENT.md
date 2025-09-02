@@ -18,9 +18,12 @@
    npm i -g vercel
    ```
 
-3. **Deploy Frontend** (Root Directory = `frontend`)
+3. **Deploy Frontend**
    - In Vercel Dashboard, import the GitHub repo
    - Set "Root Directory" to `frontend`
+   - Framework preset: Other
+   - Build Command: leave empty or `npm run build`
+   - Output Directory: `public`
    - Set Environment Variable: `NEXT_PUBLIC_WS_URL` = your Cloud Run WS URL (e.g., `wss://<service>-<hash>-<region>.a.run.app/ws`)
    - Deploy
 
