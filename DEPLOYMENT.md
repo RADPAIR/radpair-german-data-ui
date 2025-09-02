@@ -18,13 +18,11 @@
    npm i -g vercel
    ```
 
-3. **Deploy Frontend**
-   ```bash
-   vercel
-   ```
-
-4. **Set Environment Variables in Vercel Dashboard**
-   - `NEXT_PUBLIC_WS_URL`: Your backend WebSocket URL (e.g., `wss://radpair-backend.herokuapp.com/ws`)
+3. **Deploy Frontend** (Root Directory = `frontend`)
+   - In Vercel Dashboard, import the GitHub repo
+   - Set "Root Directory" to `frontend`
+   - Set Environment Variable: `NEXT_PUBLIC_WS_URL` = your Cloud Run WS URL (e.g., `wss://<service>-<hash>-<region>.a.run.app/ws`)
+   - Deploy
 
 ## 🖥️ Backend Deployment (Cloud Run)
 
@@ -112,11 +110,10 @@ git checkout -b feature/radpair-api-integration
 
 ### Frontend Configuration
 
-The frontend is static and deployed via Vercel from `vercel.json`.
+The frontend is a static site in `frontend/` with a serverless function at `frontend/api/config.js`.
 
-- Set in Vercel Project Settings → Environment Variables:
-  - `radpair_ws_url` (used by `vercel.json`) to your Cloud Run WebSocket URL, e.g. `wss://<service>-<hash>-<region>.a.run.app/ws`
-  - Alternatively set `NEXT_PUBLIC_WS_URL` directly in Project Settings.
+- Set in Vercel Project Settings → Environment Variables (for the `frontend` project):
+  - `NEXT_PUBLIC_WS_URL` = your Cloud Run WebSocket URL, e.g. `wss://<service>-<hash>-<region>.a.run.app/ws`
 
 The app reads the value at runtime via `/api/config`.
 
@@ -154,12 +151,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: akhileshns/heroku-deploy@v3.12.12
-        with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: "radpair-backend-german"
-          heroku_email: ${{ secrets.HEROKU_EMAIL }}
-          appdir: "backend"
+      - name: Deploy to Cloud Run from source
+        run: |
+          gcloud run deploy radpair-german-backend \
+            --source backend \
+            --region us-central1 \
+            --allow-unauthenticated \
+            --set-env-vars GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
 ```
 
 ## 🔐 Security Setup

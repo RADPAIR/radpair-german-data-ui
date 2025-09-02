@@ -15,11 +15,10 @@ Real-time German medical transcription with AI-powered polish processing.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/RADPAIR/radpair-german-data-ui)
 
-Monorepo-friendly via `vercel.json` at repo root.
-
 1. Import the repo into Vercel.
-2. In Project Settings → Environment Variables, set `radpair_ws_url` to your Cloud Run WS URL (e.g., `wss://<service>-<hash>-<region>.a.run.app/ws`).
-3. Deploy. The static site uses `/api/config` to read the URL at runtime.
+2. Set Root Directory to `frontend`.
+3. In Project Settings → Environment Variables, set `NEXT_PUBLIC_WS_URL` to your Cloud Run WS URL (e.g., `wss://<service>-<hash>-<region>.a.run.app/ws`).
+4. Deploy. The static site uses `/api/config` to read the URL at runtime.
 
 ### Backend Setup
 
@@ -66,12 +65,15 @@ radpair-german-data-ui/
 │       └── German_studies.text  # 287 study types (PLACEHOLDER)
 │   └── src/                 # Core components
 │       └── core_components_audio_german.py
-├── public/                  # Static assets
-│   └── RADPAIR-LOGO-WHITE.png
-├── api/                     # Vercel serverless functions
+├── frontend/                 # Vercel static site root
+│   ├── RADPAIR-LOGO-WHITE.png
+│   ├── package.json
+│   ├── index.html
+│   ├── app.js
+│   ├── styles.css
+│   └── api/                 # Vercel serverless functions
 │   └── config.js            # Exposes runtime WS URL
-├── vercel.json              # Vercel configuration
-├── package.json             # Node dependencies
+├── vercel.json              # (deprecated) leave empty or remove; use Root Directory = frontend
 └── .env.example             # Environment template
 ```
 
