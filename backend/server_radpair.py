@@ -101,20 +101,14 @@ class RadPairHandler(MagnusOpusHandler):
             return response.json()['study_types']
         """
         study_types = []
-        # Primary location: alongside server file (copied in container)
-        german_studies_file = Path(__file__).parent / "German_studies.text"
-        # Fallback: repository data folder
-        fallback_file = Path(__file__).resolve().parents[1] / "data" / "German_studies.text"
+        # Single source of truth: file under backend/data/
+        german_studies_file = Path(__file__).parent / "data" / "German_studies.text"
         
         try:
             if german_studies_file.exists():
                 with open(german_studies_file, 'r', encoding='utf-8') as f:
                     study_types = [line.strip() for line in f if line.strip()]
-                logger.info(f"Loaded {len(study_types)} German study types from file (placeholder)")
-            elif fallback_file.exists():
-                with open(fallback_file, 'r', encoding='utf-8') as f:
-                    study_types = [line.strip() for line in f if line.strip()]
-                logger.info(f"Loaded {len(study_types)} German study types from fallback data file")
+                logger.info(f"Loaded {len(study_types)} German study types from file")
             else:
                 logger.warning("German_studies.text not found, using defaults")
                 # Fallback to some common German study types

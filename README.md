@@ -53,24 +53,26 @@ python server_radpair.py
 
 ```
 radpair-german-data-ui/
-├── frontend/                # Vercel-deployable frontend
-│   ├── index.html          # Main UI (dark mode)
-│   ├── app.js             # Frontend logic
-│   └── styles.css         # Styles with Comfortaa font
-├── backend/               # Python backend server
-│   ├── server_radpair.py  # FastAPI WebSocket server
-│   ├── requirements.txt   # Python dependencies
-│   └── src/              # Core components
+├── frontend/                 # Vercel-deployable frontend
+│   ├── index.html           # Main UI (dark mode)
+│   ├── app.js              # Frontend logic
+│   └── styles.css          # Styles with Comfortaa font
+├── backend/                  # Python backend server (Cloud Run)
+│   ├── Dockerfile           # Container for Cloud Run
+│   ├── .dockerignore
+│   ├── server_radpair.py    # FastAPI WebSocket server
+│   ├── requirements.txt     # Python dependencies
+│   └── data/
+│       └── German_studies.text  # 287 study types (PLACEHOLDER)
+│   └── src/                 # Core components
 │       └── core_components_audio_german.py
-├── public/               # Static assets
+├── public/                  # Static assets
 │   └── RADPAIR-LOGO-WHITE.png
-├── data/                 # Placeholder data
-│   ├── German_studies.text  # 287 study types (PLACEHOLDER)
-│   ├── macros.csv          # English macros (PLACEHOLDER)
-│   └── macros_german.csv   # German macros (TODO)
-├── vercel.json          # Vercel configuration
-├── package.json         # Node dependencies
-└── .env.example        # Environment template
+├── api/                     # Vercel serverless functions
+│   └── config.js            # Exposes runtime WS URL
+├── vercel.json              # Vercel configuration
+├── package.json             # Node dependencies
+└── .env.example             # Environment template
 ```
 
 ## 🔌 Integration Points
