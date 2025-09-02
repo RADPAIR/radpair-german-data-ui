@@ -15,9 +15,11 @@ Real-time German medical transcription with AI-powered polish processing.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/RADPAIR/radpair-german-data-ui)
 
-1. Click the button above
-2. Set environment variable: `NEXT_PUBLIC_WS_URL` to your backend WebSocket URL
-3. Deploy!
+Monorepo-friendly via `vercel.json` at repo root.
+
+1. Import the repo into Vercel.
+2. In Project Settings → Environment Variables, set `radpair_ws_url` to your Cloud Run WS URL (e.g., `wss://<service>-<hash>-<region>.a.run.app/ws`).
+3. Deploy. The static site uses `/api/config` to read the URL at runtime.
 
 ### Backend Setup
 
@@ -106,18 +108,18 @@ nieren,Die Nieren sind normal groß und zeigen normale Echogenität.
    ```
 4. Deploy!
 
-### Backend (Heroku/Railway)
+### Backend (Cloud Run)
 
-Create `Procfile`:
-```
-web: uvicorn backend.server_radpair:app --host 0.0.0.0 --port $PORT
-```
+The backend has a Dockerfile at `backend/Dockerfile` and serves on `$PORT`.
 
-Deploy:
+Quick deploy with gcloud:
+
 ```bash
-heroku create radpair-backend-german
-heroku config:set GEMINI_API_KEY=your_key
-git push heroku main
+gcloud run deploy radpair-german-backend \
+  --source backend \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars GEMINI_API_KEY=your_key
 ```
 
 ## 🔧 Configuration
@@ -126,13 +128,15 @@ git push heroku main
 
 **Frontend (.env.local)**:
 ```env
-NEXT_PUBLIC_WS_URL=ws://localhost:8768/ws
+# Not used at build; set in Vercel Project settings as radpair_ws_url
 ```
 
 **Backend (.env)**:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
-SERVER_PORT=8768
+# Optional
+SERVER_PORT=8080
+ALLOWED_ORIGINS=https://your-frontend.vercel.app
 ```
 
 ## 🧪 Testing

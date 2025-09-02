@@ -26,79 +26,49 @@
 4. **Set Environment Variables in Vercel Dashboard**
    - `NEXT_PUBLIC_WS_URL`: Your backend WebSocket URL (e.g., `wss://radpair-backend.herokuapp.com/ws`)
 
-## 🖥️ Backend Deployment
+## 🖥️ Backend Deployment (Cloud Run)
 
-### Option 1: Heroku
+The backend is containerized with `backend/Dockerfile` and listens on `$PORT`.
 
-1. **Create Heroku App**
-   ```bash
-   cd backend
-   heroku create radpair-backend-german
-   ```
+### Option A: Cloud Run GitHub Integration (recommended)
 
-2. **Create Procfile**
-   ```bash
-   echo "web: uvicorn server_radpair:app --host 0.0.0.0 --port \$PORT" > Procfile
-   ```
+1. Push this repo to GitHub.
+2. In Google Cloud Console → Cloud Run → Create Service → Deploy from source.
+3. Connect your GitHub repo and pick the branch.
+4. Repository root: use this repo; Source directory: `backend/`.
+5. Build: Dockerfile (auto-detected).
+6. Service settings:
+   - Allow unauthenticated invocations.
+   - Min instances: 0 or 1 as preferred.
+7. Environment variables:
+   - `GEMINI_API_KEY` (or `GOOGLE_API_KEY`)
+   - Optional: `ALLOWED_ORIGINS` (comma-separated, e.g. `https://your-frontend.vercel.app`)
+8. Complete setup to enable automatic deploys on push.
 
-3. **Set Environment Variables**
-   ```bash
-   heroku config:set GEMINI_API_KEY=your_key_here
-   ```
+After deploy, note the URL: `https://<service>-<hash>-<region>.a.run.app`. Your WebSocket URL is `wss://<...>/ws`.
 
-4. **Deploy**
-   ```bash
-   git add .
-   git commit -m "Deploy RADPAIR backend"
-   git push heroku main
-   ```
+### Option B: gcloud (manual)
 
-### Option 2: Railway.app
+```bash
+gcloud run deploy radpair-german-backend \
+  --source backend \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars GEMINI_API_KEY=your_key
+```
 
-1. **Create railway.json**
-   ```json
-   {
-     "build": {
-       "builder": "NIXPACKS"
-     },
-     "deploy": {
-       "startCommand": "cd backend && uvicorn server_radpair:app --host 0.0.0.0 --port $PORT"
-     }
-   }
-   ```
+Or, using Docker:
 
-2. **Deploy via Railway CLI**
-   ```bash
-   railway login
-   railway init
-   railway up
-   railway env set GEMINI_API_KEY=your_key_here
-   ```
-
-### Option 3: Docker
-
-1. **Create Dockerfile**
-   ```dockerfile
-   FROM python:3.11-slim
-   
-   WORKDIR /app
-   
-   COPY backend/requirements.txt .
-   RUN pip install --no-cache-dir -r requirements.txt
-   
-   COPY backend/ .
-   COPY data/ ./data/
-   
-   EXPOSE 8768
-   
-   CMD ["uvicorn", "server_radpair:app", "--host", "0.0.0.0", "--port", "8768"]
-   ```
-
-2. **Build and Run**
-   ```bash
-   docker build -t radpair-german .
-   docker run -p 8768:8768 -e GEMINI_API_KEY=your_key radpair-german
-   ```
+```bash
+cd backend
+docker build -t gcr.io/$GOOGLE_CLOUD_PROJECT/radpair-german-backend:latest .
+docker push gcr.io/$GOOGLE_CLOUD_PROJECT/radpair-german-backend:latest
+gcloud run deploy radpair-german-backend \
+  --image gcr.io/$GOOGLE_CLOUD_PROJECT/radpair-german-backend:latest \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars GEMINI_API_KEY=your_key
+```
 
 ## 📝 GitHub Setup
 
@@ -142,25 +112,20 @@ git checkout -b feature/radpair-api-integration
 
 ### Frontend Configuration
 
-Update `frontend/app.js`:
-```javascript
-// For production
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'wss://radpair-backend.herokuapp.com/ws';
-```
+The frontend is static and deployed via Vercel from `vercel.json`.
+
+- Set in Vercel Project Settings → Environment Variables:
+  - `radpair_ws_url` (used by `vercel.json`) to your Cloud Run WebSocket URL, e.g. `wss://<service>-<hash>-<region>.a.run.app/ws`
+  - Alternatively set `NEXT_PUBLIC_WS_URL` directly in Project Settings.
+
+The app reads the value at runtime via `/api/config`.
 
 ### Backend Configuration
 
-Update WebSocket CORS in `backend/server_radpair.py`:
-```python
-from fastapi.middleware.cors import CORSMiddleware
+FastAPI includes permissive CORS by default. To restrict, set:
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://radpair-german.vercel.app"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+```env
+ALLOWED_ORIGINS=https://your-frontend.vercel.app
 ```
 
 ## 🔄 CI/CD with GitHub Actions

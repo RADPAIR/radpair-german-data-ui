@@ -1,6 +1,24 @@
 // RADPAIR German Medical Transcription - Frontend Logic
-// Configuration from environment or defaults
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8768/ws';
+// Resolve WebSocket URL from global/window or Vercel API fallback
+let WS_URL = (typeof window !== 'undefined' && window.NEXT_PUBLIC_WS_URL)
+  || (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_WS_URL)
+  || null;
+
+async function resolveWsUrl() {
+  if (WS_URL) return WS_URL;
+  try {
+    const resp = await fetch('/api/config');
+    if (resp.ok) {
+      const data = await resp.json();
+      WS_URL = data.wsUrl || 'ws://localhost:8768/ws';
+      return WS_URL;
+    }
+  } catch (e) {
+    console.warn('Could not fetch /api/config, using localhost fallback');
+  }
+  WS_URL = 'ws://localhost:8768/ws';
+  return WS_URL;
+}
 
 let ws = null;
 let audioContext = null;
@@ -254,5 +272,8 @@ clearBtn.addEventListener('click', () => {
     }, 2000);
 });
 
-// Initialize
-connectWebSocket();
+// Initialize after resolving WS URL
+(async () => {
+    await resolveWsUrl();
+    connectWebSocket();
+})();

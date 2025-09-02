@@ -101,13 +101,20 @@ class RadPairHandler(MagnusOpusHandler):
             return response.json()['study_types']
         """
         study_types = []
+        # Primary location: alongside server file (copied in container)
         german_studies_file = Path(__file__).parent / "German_studies.text"
+        # Fallback: repository data folder
+        fallback_file = Path(__file__).resolve().parents[1] / "data" / "German_studies.text"
         
         try:
             if german_studies_file.exists():
                 with open(german_studies_file, 'r', encoding='utf-8') as f:
                     study_types = [line.strip() for line in f if line.strip()]
                 logger.info(f"Loaded {len(study_types)} German study types from file (placeholder)")
+            elif fallback_file.exists():
+                with open(fallback_file, 'r', encoding='utf-8') as f:
+                    study_types = [line.strip() for line in f if line.strip()]
+                logger.info(f"Loaded {len(study_types)} German study types from fallback data file")
             else:
                 logger.warning("German_studies.text not found, using defaults")
                 # Fallback to some common German study types
@@ -343,33 +350,33 @@ Geben Sie NUR den polierten Text ohne Erklärung zurück."""
 
 # WebSocket server setup - UNCHANGED FROM WORKING VERSION
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 app = FastAPI()
 
-# Serve static files
-static_dir = Path(__file__).parent
-app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+# CORS (configurable via env, defaults open)
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
+origins = [o.strip() for o in allowed_origins.split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins if origins != ["*"] else ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
 async def root():
-    """Serve the RadPair Beta HTML page"""
-    return FileResponse(str(static_dir / "index_radpair.html"))
+    """Health-friendly root endpoint for Cloud Run"""
+    return JSONResponse({"status": "ok", "service": "radpair-german-backend"})
 
 
-@app.get("/index_radpair.html")
-async def index():
-    """Serve the RadPair Beta HTML page"""
-    return FileResponse(str(static_dir / "index_radpair.html"))
-
-
-@app.get("/RADPAIR-LOGO-WHITE.png")
-async def logo():
-    """Serve the RadPair logo"""
-    return FileResponse(str(static_dir / "RADPAIR-LOGO-WHITE.png"))
+@app.get("/healthz")
+async def healthz():
+    return JSONResponse({"status": "ok"})
 
 
 @app.websocket("/ws")
@@ -449,11 +456,11 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 if __name__ == "__main__":
-    logger.info("Starting RadPair Beta server on http://localhost:8768")
-    logger.info("UI available at http://localhost:8768/index_radpair.html")
-    
+    port = int(os.environ.get("PORT", os.environ.get("SERVER_PORT", 8080)))
+    logger.info(f"Starting RadPair German backend on 0.0.0.0:{port}")
+
     # Create audio recordings directory if it doesn't exist
     audio_dir = Path(__file__).parent / "audio_recordings"
     audio_dir.mkdir(exist_ok=True)
-    
-    uvicorn.run(app, host="0.0.0.0", port=8768, log_level="info")
+
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
