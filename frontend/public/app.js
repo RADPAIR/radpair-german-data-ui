@@ -1,6 +1,50 @@
 // RADPAIR German Medical Transcription - Frontend Logic
-// Configuration from environment or defaults
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8768/ws';
+// Resolve WebSocket URL from global/window or Vercel API fallback
+let WS_URL = (typeof window !== 'undefined' && window.NEXT_PUBLIC_WS_URL)
+  || (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_WS_URL)
+  || null;
+
+function canonicalizeWsUrl(url) {
+  if (!url) return null;
+  try {
+    const u = new URL(url, (typeof window !== 'undefined' ? window.location.origin : 'http://localhost'));
+    // Ensure ws/wss protocol
+    if (u.protocol !== 'ws:' && u.protocol !== 'wss:') {
+      const isHttps = (typeof window !== 'undefined') && window.location && window.location.protocol === 'https:';
+      u.protocol = isHttps ? 'wss:' : 'ws:';
+    }
+    // Ensure /ws path
+    if (!u.pathname || u.pathname === '/' || u.pathname === '') {
+      u.pathname = '/ws';
+    }
+    return u.toString();
+  } catch (e) {
+    const base = String(url).replace(/\/$/, '');
+    return base.endsWith('/ws') ? base : `${base}/ws`;
+  }
+}
+
+async function resolveWsUrl() {
+  if (WS_URL) return (WS_URL = canonicalizeWsUrl(WS_URL));
+  try {
+    const resp = await fetch('/api/config');
+    if (resp.ok) {
+      const data = await resp.json();
+      WS_URL = canonicalizeWsUrl(data.wsUrl) || canonicalizeWsUrl('ws://localhost:8768/ws');
+      return WS_URL;
+    }
+  } catch (e) {
+    console.warn('Could not fetch /api/config, using localhost fallback');
+  }
+  // Same-origin default if running under HTTPS
+  if (typeof window !== 'undefined' && window.location) {
+    const isHttps = window.location.protocol === 'https:';
+    WS_URL = canonicalizeWsUrl(`${isHttps ? 'wss' : 'ws'}://${window.location.host}/ws`);
+    return WS_URL;
+  }
+  WS_URL = canonicalizeWsUrl('ws://localhost:8768/ws');
+  return WS_URL;
+}
 
 let ws = null;
 let audioContext = null;
@@ -254,5 +298,8 @@ clearBtn.addEventListener('click', () => {
     }, 2000);
 });
 
-// Initialize
-connectWebSocket();
+// Initialize after resolving WS URL
+(async () => {
+    await resolveWsUrl();
+    connectWebSocket();
+})();

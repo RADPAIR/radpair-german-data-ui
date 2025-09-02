@@ -2,11 +2,11 @@
   "name": "radpair-german-data-ui",
   "version": "1.0.0",
   "description": "RADPAIR German Medical Transcription UI",
-  "main": "frontend/index.html",
+  "main": "public/index.html",
   "scripts": {
-    "dev": "npx serve frontend -p 3000",
+    "dev": "npx serve public -p 3000",
     "build": "echo 'Static site - no build required'",
-    "start": "npx serve frontend -p $PORT"
+    "start": "npx serve public -p $PORT"
   },
   "repository": {
     "type": "git",
@@ -26,7 +26,7 @@
     "url": "https://github.com/RADPAIR/radpair-german-data-ui/issues"
   },
   "homepage": "https://github.com/RADPAIR/radpair-german-data-ui#readme",
-  "devDependencies": {
+  "dependencies": {
     "serve": "^14.2.0"
   }
 }

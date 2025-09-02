@@ -15,9 +15,10 @@ Real-time German medical transcription with AI-powered polish processing.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/RADPAIR/radpair-german-data-ui)
 
-1. Click the button above
-2. Set environment variable: `NEXT_PUBLIC_WS_URL` to your backend WebSocket URL
-3. Deploy!
+1. Import the repo into Vercel.
+2. Set Root Directory to `frontend`.
+3. In Project Settings → Environment Variables, set `NEXT_PUBLIC_WS_URL` to your Cloud Run WS URL (e.g., `wss://<service>-<hash>-<region>.a.run.app/ws`).
+4. Deploy. The static site uses `/api/config` to read the URL at runtime.
 
 ### Backend Setup
 
@@ -51,24 +52,30 @@ python server_radpair.py
 
 ```
 radpair-german-data-ui/
-├── frontend/                # Vercel-deployable frontend
-│   ├── index.html          # Main UI (dark mode)
-│   ├── app.js             # Frontend logic
-│   └── styles.css         # Styles with Comfortaa font
-├── backend/               # Python backend server
-│   ├── server_radpair.py  # FastAPI WebSocket server
-│   ├── requirements.txt   # Python dependencies
-│   └── src/              # Core components
+├── frontend/                 # Vercel-deployable frontend
+│   ├── index.html           # Main UI (dark mode)
+│   ├── app.js              # Frontend logic
+│   └── styles.css          # Styles with Comfortaa font
+├── backend/                  # Python backend server (Cloud Run)
+│   ├── Dockerfile           # Container for Cloud Run
+│   ├── .dockerignore
+│   ├── server_radpair.py    # FastAPI WebSocket server
+│   ├── requirements.txt     # Python dependencies
+│   └── data/
+│       └── German_studies.text  # 287 study types (PLACEHOLDER)
+│   └── src/                 # Core components
 │       └── core_components_audio_german.py
-├── public/               # Static assets
-│   └── RADPAIR-LOGO-WHITE.png
-├── data/                 # Placeholder data
-│   ├── German_studies.text  # 287 study types (PLACEHOLDER)
-│   ├── macros.csv          # English macros (PLACEHOLDER)
-│   └── macros_german.csv   # German macros (TODO)
-├── vercel.json          # Vercel configuration
-├── package.json         # Node dependencies
-└── .env.example        # Environment template
+├── frontend/                 # Vercel static site root
+│   ├── package.json
+│   ├── public/             # Output directory for Vercel
+│   │   ├── index.html
+│   │   ├── app.js
+│   │   ├── styles.css
+│   │   └── RADPAIR-LOGO-WHITE.png
+│   └── api/                # Vercel serverless functions
+│       └── config.js       # Exposes runtime WS URL
+├── vercel.json              # (deprecated) leave empty or remove; use Root Directory = frontend
+└── .env.example             # Environment template
 ```
 
 ## 🔌 Integration Points
@@ -106,18 +113,18 @@ nieren,Die Nieren sind normal groß und zeigen normale Echogenität.
    ```
 4. Deploy!
 
-### Backend (Heroku/Railway)
+### Backend (Cloud Run)
 
-Create `Procfile`:
-```
-web: uvicorn backend.server_radpair:app --host 0.0.0.0 --port $PORT
-```
+The backend has a Dockerfile at `backend/Dockerfile` and serves on `$PORT`.
 
-Deploy:
+Quick deploy with gcloud:
+
 ```bash
-heroku create radpair-backend-german
-heroku config:set GEMINI_API_KEY=your_key
-git push heroku main
+gcloud run deploy radpair-german-backend \
+  --source backend \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars GEMINI_API_KEY=your_key
 ```
 
 ## 🔧 Configuration
@@ -126,13 +133,15 @@ git push heroku main
 
 **Frontend (.env.local)**:
 ```env
-NEXT_PUBLIC_WS_URL=ws://localhost:8768/ws
+# Not used at build; set in Vercel Project settings as radpair_ws_url
 ```
 
 **Backend (.env)**:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
-SERVER_PORT=8768
+# Optional
+SERVER_PORT=8080
+ALLOWED_ORIGINS=https://your-frontend.vercel.app
 ```
 
 ## 🧪 Testing
