@@ -516,7 +516,15 @@
 
         // WebSocket connection
         function connectWebSocket() {
-            ws = new WebSocket('ws://localhost:8768/ws');
+            const envWsUrl = (typeof window !== 'undefined' && window.NEXT_PUBLIC_WS_URL) 
+                || (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_WS_URL);
+            const wsUrl = envWsUrl || 'ws://localhost:8768/ws';
+            try {
+                ws = new WebSocket(wsUrl);
+            } catch (e) {
+                console.error('Failed to create WebSocket with URL:', wsUrl, e);
+                throw e;
+            }
 
             ws.onopen = () => {
                 console.log('WebSocket connected');
