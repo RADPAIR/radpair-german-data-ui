@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RADPAIR Beta - Medical Transcription</title>
+    <link rel="icon" type="image/png" href="/RADPAIR-LOGO-WHITE.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="header">
+        <div class="logo-container">
+            <img src="/RADPAIR-LOGO-WHITE.png" alt="RADPAIR" class="logo">
+            <h1 class="title">RADPAIR<span class="beta-badge">BETA</span></h1>
+        </div>
+        <div class="connection-indicator">
+            <span class="connection-dot" id="connectionDot"></span>
+            <span id="connectionStatus">Getrennt</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="controls">
+            <div class="study-selector">
+                <select id="studyType">
+                    <option value="">Studientyp auswählen...</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button id="recordBtn" disabled>
+                    <span id="recordIcon">🎤</span>
+                    <span id="recordText">Aufnahme starten</span>
+                </button>
+                <button id="clearBtn">
+                    <span>🗑️</span>
+                    <span>Löschen</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="transcript-container">
+            <div class="transcript-header">
+                <div class="transcript-title">Transkript</div>
+                <div class="transcript-status" id="transcriptStatus">Bereit</div>
+            </div>
+            <div id="transcript" class="polished"></div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <div id="status" class="ready">System bereit</div>
+        <div id="timestamp"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
