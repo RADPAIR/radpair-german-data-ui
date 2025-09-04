@@ -23,4 +23,4 @@ COPY . /app/backend
 EXPOSE 8080
 
 # Start using uvicorn
-CMD ["uvicorn", "server_radpair_v2:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "server_radpair:app", "--host", "0.0.0.0", "--port", "8080"]
