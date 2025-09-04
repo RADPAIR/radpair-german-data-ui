@@ -3,18 +3,401 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RADPAIR Beta - Medical Transcription</title>
-    <link rel="icon" type="image/png" href="/RADPAIR-LOGO-WHITE.png">
+    <title>RADPAIR Beta v2 - Medical Transcription (No Polish)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comfortaa', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a0000 0%, #000000 100%);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .beta-badge {
+            background: #8B0000;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .version-badge {
+            background: #4B0082;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 500;
+            margin-left: 0.25rem;
+        }
+
+        .main-container {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .study-selector {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .study-selector select {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            border: 1px solid #333;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Comfortaa', sans-serif;
+        }
+
+        .study-selector select:hover {
+            border-color: #8B0000;
+        }
+
+        .study-selector select:focus {
+            outline: none;
+            border-color: #DC143C;
+            box-shadow: 0 0 0 2px rgba(220, 20, 60, 0.2);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'Comfortaa', sans-serif;
+        }
+
+        #recordBtn {
+            background-color: #DC143C;
+            color: white;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        #recordBtn:hover:not(:disabled) {
+            background-color: #B91C3C;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 20, 60, 0.3);
+        }
+
+        #recordBtn.recording {
+            background-color: #8B0000;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 20, 60, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 20, 60, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 20, 60, 0); }
+        }
+
+        #clearBtn {
+            background-color: #4B0082;
+            color: white;
+        }
+
+        #clearBtn:hover:not(:disabled) {
+            background-color: #3A006F;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(75, 0, 130, 0.3);
+        }
+
+        #copyBtn {
+            background-color: #2E7D32;
+            color: white;
+            position: relative;
+        }
+
+        #copyBtn:hover:not(:disabled) {
+            background-color: #1B5E20;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+        }
+
+        #copyBtn.copied {
+            background-color: #66BB6A;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .transcript-container {
+            background-color: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 1.5rem;
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .transcript-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #333;
+        }
+
+        .transcript-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .transcript-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .copy-button {
+            background-color: #2E7D32;
+            color: white;
+            border: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+
+        .copy-button:hover {
+            background-color: #1B5E20;
+            transform: scale(1.05);
+        }
+
+        .copy-button.copied {
+            background-color: #66BB6A;
+        }
+
+        .transcript-status {
+            font-size: 0.875rem;
+            color: #888;
+        }
+
+        #transcript {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #ffffff;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        #transcript.empty {
+            color: #666;
+            font-style: italic;
+        }
+
+        .status-bar {
+            background-color: #1a1a1a;
+            border-top: 1px solid #333;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #status {
+            font-size: 0.875rem;
+            color: #888;
+        }
+
+        #status.recording {
+            color: #DC143C;
+            font-weight: 600;
+        }
+
+        #status.processing {
+            color: #FFA500;
+        }
+
+        #status.ready {
+            color: #32CD32;
+        }
+
+        .connection-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #888;
+        }
+
+        .connection-dot.connected {
+            background-color: #32CD32;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: #333;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            transform: translateY(-100%);
+            margin-top: -0.5rem;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4B0082;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3A006F;
+        }
+
+        /* Info box */
+        .info-box {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            color: #aaa;
+        }
+
+        .info-box strong {
+            color: #DC143C;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .main-container {
+                padding: 1rem;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .study-selector {
+                width: 100%;
+            }
+
+            .button-group {
+                width: 100%;
+                justify-content: stretch;
+            }
+
+            button {
+                flex: 1;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="header">
         <div class="logo-container">
-            <img src="/RADPAIR-LOGO-WHITE.png" alt="RADPAIR" class="logo">
-            <h1 class="title">RADPAIR<span class="beta-badge">BETA</span></h1>
+            <img src="RADPAIR-LOGO-WHITE.png" alt="RADPAIR" class="logo">
+            <h1 class="title">RADPAIR<span class="beta-badge">BETA</span><span class="version-badge">v2</span></h1>
         </div>
         <div class="connection-indicator">
             <span class="connection-dot" id="connectionDot"></span>
@@ -23,6 +406,10 @@
     </div>
 
     <div class="main-container">
+        <div class="info-box">
+            <strong>Version 2 Features:</strong> Kumulatives Transkript • Keine Polierung • Deutsche Sprachbefehle für Interpunktion (z.B. "Punkt", "Komma", "neuer Absatz")
+        </div>
+
         <div class="controls">
             <div class="study-selector">
                 <select id="studyType">
@@ -44,9 +431,15 @@
         <div class="transcript-container">
             <div class="transcript-header">
                 <div class="transcript-title">Transkript</div>
-                <div class="transcript-status" id="transcriptStatus">Bereit</div>
+                <div class="transcript-actions">
+                    <button class="copy-button" id="copyTranscriptBtn" title="Transkript kopieren">
+                        <span id="copyIcon">📋</span>
+                        <span id="copyText">Kopieren</span>
+                    </button>
+                    <div class="transcript-status" id="transcriptStatus">Bereit</div>
+                </div>
             </div>
-            <div id="transcript" class="polished"></div>
+            <div id="transcript" class="empty">Noch kein Transkript vorhanden...</div>
         </div>
     </div>
 
@@ -55,6 +448,309 @@
         <div id="timestamp"></div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        let ws = null;
+        let audioContext = null;
+        let source = null;
+        let processor = null;
+        let isRecording = false;
+        let stream = null;
+
+        // DOM elements
+        const recordBtn = document.getElementById('recordBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyTranscriptBtn = document.getElementById('copyTranscriptBtn');
+        const copyIcon = document.getElementById('copyIcon');
+        const copyText = document.getElementById('copyText');
+        const transcript = document.getElementById('transcript');
+        const status = document.getElementById('status');
+        const studyTypeSelect = document.getElementById('studyType');
+        const connectionDot = document.getElementById('connectionDot');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const transcriptStatus = document.getElementById('transcriptStatus');
+        const recordText = document.getElementById('recordText');
+        const recordIcon = document.getElementById('recordIcon');
+        const timestamp = document.getElementById('timestamp');
+
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            timestamp.textContent = now.toLocaleTimeString('de-DE');
+        }
+        setInterval(updateTimestamp, 1000);
+        updateTimestamp();
+
+        // Copy transcript function
+        async function copyTranscript() {
+            const text = transcript.textContent;
+            
+            // Don't copy if empty
+            if (text === 'Noch kein Transkript vorhanden...' || !text) {
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(text);
+                
+                // Visual feedback
+                copyTranscriptBtn.classList.add('copied');
+                copyIcon.textContent = '✅';
+                copyText.textContent = 'Kopiert!';
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    copyTranscriptBtn.classList.remove('copied');
+                    copyIcon.textContent = '📋';
+                    copyText.textContent = 'Kopieren';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                copyIcon.textContent = '❌';
+                copyText.textContent = 'Fehler';
+                setTimeout(() => {
+                    copyIcon.textContent = '📋';
+                    copyText.textContent = 'Kopieren';
+                }, 2000);
+            }
+        }
+
+        // WebSocket connection
+        function connectWebSocket() {
+            ws = new WebSocket('ws://localhost:8768/ws');
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                connectionDot.classList.add('connected');
+                connectionStatus.textContent = 'Verbunden';
+                status.textContent = 'Verbunden mit Server';
+                status.className = 'ready';
+                recordBtn.disabled = false;
+                
+                // Request study types
+                ws.send(JSON.stringify({ type: 'get_study_types' }));
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log('Received message:', data);
+
+                switch(data.type) {
+                    case 'study_types':
+                        populateStudyTypes(data.study_types);
+                        break;
+                    
+                    case 'partial_transcript':
+                        // Show live transcript (partial during speech)
+                        if (data.text) {
+                            transcript.textContent = data.text;
+                            transcript.className = '';
+                        }
+                        transcriptStatus.textContent = 'Live-Transkription';
+                        break;
+                    
+                    case 'final_transcript':
+                        // Show final transcript for this turn (with macros expanded)
+                        if (data.text) {
+                            transcript.textContent = data.text;
+                            transcript.className = '';
+                        }
+                        break;
+                    
+                    case 'accumulative_transcript':
+                        // Show the accumulative transcript (all turns combined)
+                        if (data.text) {
+                            transcript.textContent = data.text;
+                            transcript.className = '';
+                        } else {
+                            transcript.textContent = 'Noch kein Transkript vorhanden...';
+                            transcript.className = 'empty';
+                        }
+                        transcriptStatus.textContent = 'Transkript aktualisiert';
+                        break;
+                    
+                    case 'transcript_cleared':
+                        transcript.textContent = 'Noch kein Transkript vorhanden...';
+                        transcript.className = 'empty';
+                        transcriptStatus.textContent = 'Gelöscht';
+                        break;
+                    
+                    case 'status':
+                        status.textContent = data.message;
+                        if (data.message.includes('Aufnahme läuft')) {
+                            status.className = 'recording';
+                        } else if (data.message.includes('beendet')) {
+                            status.className = 'ready';
+                            transcriptStatus.textContent = 'Bereit';
+                        } else {
+                            status.className = 'ready';
+                        }
+                        break;
+                    
+                    case 'error':
+                        console.error('Server error:', data.message);
+                        status.textContent = `Fehler: ${data.message}`;
+                        status.className = 'ready';
+                        break;
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                connectionDot.classList.remove('connected');
+                connectionStatus.textContent = 'Fehler';
+                status.textContent = 'Verbindungsfehler';
+                status.className = 'ready';
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                connectionDot.classList.remove('connected');
+                connectionStatus.textContent = 'Getrennt';
+                status.textContent = 'Verbindung getrennt - Neuverbindung in 3 Sekunden...';
+                status.className = 'ready';
+                recordBtn.disabled = true;
+                
+                // Reconnect after 3 seconds
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        function populateStudyTypes(studyTypes) {
+            studyTypeSelect.innerHTML = '<option value="">Studientyp auswählen...</option>';
+            studyTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                studyTypeSelect.appendChild(option);
+            });
+            
+            // Set default if available
+            if (studyTypes.includes('CT Thorax')) {
+                studyTypeSelect.value = 'CT Thorax';
+            } else if (studyTypes.length > 0) {
+                studyTypeSelect.value = studyTypes[0];
+            }
+        }
+
+        // Audio recording functions
+        async function startRecording() {
+            try {
+                const studyType = studyTypeSelect.value || 'CT Thorax';
+                
+                // Send start message
+                ws.send(JSON.stringify({
+                    type: 'start_recording',
+                    study_type: studyType
+                }));
+
+                // Get user media
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 16000,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+
+                // Create audio context with 16kHz sample rate
+                audioContext = new AudioContext({ sampleRate: 16000 });
+                source = audioContext.createMediaStreamSource(stream);
+                processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                processor.onaudioprocess = (e) => {
+                    if (!isRecording) return;
+
+                    const inputData = e.inputBuffer.getChannelData(0);
+                    
+                    // Convert Float32 to Int16
+                    const pcm16 = new Int16Array(inputData.length);
+                    for (let i = 0; i < inputData.length; i++) {
+                        const s = Math.max(-1, Math.min(1, inputData[i]));
+                        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+                    
+                    // Send as binary
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(pcm16.buffer);
+                    }
+                };
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+
+                isRecording = true;
+                recordBtn.classList.add('recording');
+                recordText.textContent = 'Aufnahme stoppen';
+                recordIcon.textContent = '⏹️';
+                status.textContent = `Aufnahme läuft für ${studyType}...`;
+                status.className = 'recording';
+                transcriptStatus.textContent = 'Aufnahme...';
+                
+                // Don't clear transcript in v2 - keep accumulative
+
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                status.textContent = `Fehler: ${error.message}`;
+                status.className = 'ready';
+            }
+        }
+
+        function stopRecording() {
+            isRecording = false;
+            recordBtn.classList.remove('recording');
+            recordText.textContent = 'Aufnahme starten';
+            recordIcon.textContent = '🎤';
+            status.textContent = 'Aufnahme beendet';
+            status.className = 'ready';
+
+            // Stop audio processing
+            if (processor) {
+                processor.disconnect();
+                processor = null;
+            }
+            if (source) {
+                source.disconnect();
+                source = null;
+            }
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+
+            // Send stop message
+            ws.send(JSON.stringify({ type: 'stop_recording' }));
+        }
+
+        // Event listeners
+        recordBtn.addEventListener('click', () => {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            // Send clear message to server
+            ws.send(JSON.stringify({ type: 'clear_transcript' }));
+            status.textContent = 'Transkript gelöscht';
+            status.className = 'ready';
+            
+            setTimeout(() => {
+                status.textContent = 'System bereit';
+            }, 2000);
+        });
+
+        copyTranscriptBtn.addEventListener('click', copyTranscript);
+
+        // Initialize
+        connectWebSocket();
+    </script>
 </body>
 </html>
