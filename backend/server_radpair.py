@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 """
-RADPAIR BETA - GERMAN MEDICAL TRANSCRIPTION SERVER
-===================================================
-Version: radpair-beta-v1
+RADPAIR BETA - GERMAN MEDICAL TRANSCRIPTION SERVER (NO POLISH VERSION)
+=======================================================================
+Version: radpair-beta-v2-no-polish
 Date: 2025-01-09
 Status: PRODUCTION READY
 
-Based on Magnus Opus v3-audio-german-FINAL with simplified UI:
-- Single transcript box that updates from live to polished
-- No concatenated audio transcription
-- Dark mode UI with RadPair branding
-- All core logic preserved from working version
+Changes from v1:
+- NO POLISH STEP - Direct transcription only
+- ACCUMULATIVE TRANSCRIPT - Each pause adds to previous content
+- Voice commands for punctuation handled in prompts
 
-CRITICAL: Core transcription logic unchanged from v3-audio-german-FINAL
+Based on Magnus Opus v3-audio-german-FINAL with modifications
 """
 
 import asyncio
@@ -30,13 +29,13 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Add parent directories to path for imports
-sys.path.append(str(Path(__file__).parent.parent.parent))  # Go up to magnus_opus_streamlined
-sys.path.append(str(Path(__file__).parent.parent))  # Also add parent for fallback
+sys.path.append(str(Path(__file__).parent.parent.parent))
+sys.path.append(str(Path(__file__).parent.parent))
 
 # Import from German audio version of core components - UNCHANGED
 from src.core_components_audio_german import (
     MagnusOpusHandler,
-    MedicalTurnProcessor,
+    MedicalTurnProcessor as OriginalMedicalTurnProcessor,
     SpeechDetector,
     macro_processor,
     DEFAULT_STUDY_TYPE,
@@ -44,8 +43,59 @@ from src.core_components_audio_german import (
     SAMPLE_RATE,
 )
 
+# Import the new prompt with punctuation commands
+from src.core_components_radpair_v2 import create_german_medical_prompt_v2
+
 # Load environment variables
 load_dotenv()
+
+
+class MedicalTurnProcessor(OriginalMedicalTurnProcessor):
+    """Override to use new prompt with punctuation commands"""
+    
+    async def __aenter__(self):
+        """Start the medical turn with custom prompt"""
+        self.turn_start_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        logger.info(f"Turn {self.turn_number}: Starting medical transcription turn for {self.study_type} at {self.turn_start_time}")
+        
+        try:
+            from google import genai
+            from google.genai import types
+            from google.genai.types import LiveConnectConfig, Modality
+            
+            # Use the NEW prompt with punctuation commands
+            prompt = create_german_medical_prompt_v2(self.study_type, self.language)
+            logger.info(f"Turn {self.turn_number}: System instruction prepared ({len(prompt)} chars)")
+            
+            # Rest is same as original
+            config = LiveConnectConfig(
+                response_modalities=[Modality.TEXT],
+                realtime_input_config={
+                    "automatic_activity_detection": {"disabled": True}
+                },
+                system_instruction=prompt,
+                temperature=0.0,
+                top_p=0.1,
+                top_k=1,
+                max_output_tokens=200
+            )
+            
+            self.context_manager = self.client.aio.live.connect(
+                model="models/gemini-live-2.5-flash-preview",
+                config=config
+            )
+            self.session = await self.context_manager.__aenter__()
+            
+            await self.session.send_realtime_input(
+                activity_start=types.ActivityStart()
+            )
+            
+            logger.info(f"Turn {self.turn_number}: Gemini Live session started with punctuation commands")
+            return self
+            
+        except Exception as e:
+            logger.error(f"Turn {self.turn_number}: Failed to start session: {e}")
+            raise
 
 
 class WebSocketWrapper:
@@ -68,26 +118,23 @@ class WebSocketWrapper:
             await self.ws.send_bytes(message)
 
 
-class RadPairHandler(MagnusOpusHandler):
-    """RadPair Beta handler - simplified version without concatenated audio"""
+class RadPairHandlerNoPolish(MagnusOpusHandler):
+    """RadPair Beta handler - No polish, accumulative transcript"""
 
     def __init__(self, websocket):
         """Initialize RadPair handler"""
         # Wrap the FastAPI WebSocket to make it compatible
         wrapped_ws = WebSocketWrapper(websocket)
         super().__init__(wrapped_ws)
-        self.original_websocket = websocket  # Keep original for direct use if needed
-        self.completed_segments = []
+        self.original_websocket = websocket
+        self.accumulative_transcript = ""  # Store ALL transcripts
         self.is_recording = False
         self.current_turn = None
         self.turn_count = 0
         self.speech_detector = SpeechDetector()
         
-        # Still save audio files but don't concatenate
+        # Still save audio files
         self.audio_file_paths = []
-        
-        # Cache polish client for performance
-        self.polish_client = None
     
     def load_study_types(self):
         """Load German study types from file
@@ -101,14 +148,13 @@ class RadPairHandler(MagnusOpusHandler):
             return response.json()['study_types']
         """
         study_types = []
-        # Single source of truth: file under backend/data/
-        german_studies_file = Path(__file__).parent / "data" / "German_studies.text"
+        german_studies_file = Path(__file__).parent / "German_studies.text"
         
         try:
             if german_studies_file.exists():
                 with open(german_studies_file, 'r', encoding='utf-8') as f:
                     study_types = [line.strip() for line in f if line.strip()]
-                logger.info(f"Loaded {len(study_types)} German study types from file")
+                logger.info(f"Loaded {len(study_types)} German study types from file (placeholder)")
             else:
                 logger.warning("German_studies.text not found, using defaults")
                 # Fallback to some common German study types
@@ -131,7 +177,7 @@ class RadPairHandler(MagnusOpusHandler):
     async def initialize(self):
         """Initialize Gemini client only"""
         await super().initialize()
-        logger.info("RadPair Beta German handler initialized")
+        logger.info("RadPair Beta German handler initialized (NO POLISH)")
 
     async def handle_audio_chunk(self, audio_data):
         """Process audio for real-time transcription only"""
@@ -179,10 +225,19 @@ class RadPairHandler(MagnusOpusHandler):
             # Then properly close the context manager
             await self.current_turn.__aexit__(None, None, None)
             
-            # Store completed segment
+            # ADD to accumulative transcript instead of replacing
             if result:
                 logger.info(f"Turn {self.turn_count}: Segment completed with transcript: '{result}'")
-                self.completed_segments.append(result)
+                # Add a space or newline between segments
+                if self.accumulative_transcript:
+                    self.accumulative_transcript += " "  # Add space between segments
+                self.accumulative_transcript += result
+                
+                # Send the FULL accumulative transcript to UI
+                await self.websocket.send(json.dumps({
+                    "type": "accumulative_transcript",
+                    "text": self.accumulative_transcript
+                }))
             else:
                 logger.warning(f"Turn {self.turn_count}: No transcript received")
             
@@ -198,19 +253,19 @@ class RadPairHandler(MagnusOpusHandler):
         self.current_study_type = study_type or DEFAULT_STUDY_TYPE
         self.is_recording = True
         self.turn_count = 0
-        self.completed_segments = []
-        self.audio_file_paths = []
+        # Don't clear accumulative transcript on new recording session
+        # User can manually clear if needed
         
         logger.info(f"Starting recording for study type: {self.current_study_type}")
         
-        # Send status to UI (use wrapped websocket which has send method)
+        # Send status to UI
         await self.websocket.send(json.dumps({
             "type": "status",
             "message": f"Aufnahme läuft für {self.current_study_type}..."
         }))
 
     async def stop_recording(self):
-        """Stop recording and trigger polish only (no concatenation)"""
+        """Stop recording - NO POLISH"""
         logger.info("Stopping recording...")
         self.is_recording = False
         
@@ -229,155 +284,75 @@ class RadPairHandler(MagnusOpusHandler):
             await self.current_turn.__aexit__(None, None, None)
             
             if result:
-                self.completed_segments.append(result)
+                # Add final segment to accumulative transcript
+                if self.accumulative_transcript:
+                    self.accumulative_transcript += " "
+                self.accumulative_transcript += result
                 logger.info(f"Final turn: Segment completed with transcript: '{result}'")
+                
+                # Send final accumulative transcript
+                await self.websocket.send(json.dumps({
+                    "type": "accumulative_transcript",
+                    "text": self.accumulative_transcript
+                }))
             else:
                 logger.warning("Final turn: No transcript received")
                 
             self.current_turn = None
             self.speech_detector.clear_buffer()
         
-        # Create polished transcript
-        if self.completed_segments:
-            await self._create_polish()
-        else:
-            logger.info("No segments to polish")
-            await self.websocket.send(json.dumps({
-                "type": "status",
-                "message": "Keine Aufnahme zum Polieren"
-            }))
-
-    async def _create_polish(self):
-        """Create polished version and send to UI to replace live transcript"""
-        # Combine segments with space instead of double newline for deduplication
-        combined = " ".join([s for s in self.completed_segments if s])
-        
-        if not combined.strip():
-            logger.info("No content to polish")
-            await self.websocket.send(json.dumps({
-                "type": "status",
-                "message": "Kein Inhalt zum Polieren"
-            }))
-            return
-        
-        # Remove duplicate sentences (from original version)
-        sentences = combined.split('. ')
-        seen = []
-        unique_sentences = []
-        for sent in sentences:
-            sent_clean = sent.strip().lower()
-            if sent_clean and sent_clean not in seen:
-                seen.append(sent_clean)
-                unique_sentences.append(sent.strip())
-        
-        combined_transcript = '. '.join(unique_sentences)
-        if combined_transcript and not combined_transcript.endswith('.'):
-            combined_transcript += '.'
-        
-        logger.info(f"After deduplication: {len(combined_transcript)} chars (from {len(combined)} chars)")
-        
-        try:
-            # Send status
-            await self.websocket.send(json.dumps({
-                "type": "status",
-                "message": "Polierung läuft..."
-            }))
-            
-            logger.info("==================== STARTING POLISH ====================")
-            logger.info(f"Input length: {len(combined_transcript)} characters")
-            
-            # Create polish prompt - EXACT SAME AS WORKING VERSION (simpler, faster)
-            polish_prompt = f"""LANGUAGE: Output MUST be in GERMAN (de-DE). Do NOT translate to English.
-
-Polieren Sie diese medizinische Transkription:
-1. Korrigieren Sie offensichtliche Fehler
-2. Stellen Sie konsistente Formatierung sicher
-3. Korrigieren Sie medizinische Terminologie
-4. Entfernen Sie Wiederholungen
-5. Sorgen Sie für natürlichen Fluss
-
-Intelligente Korrekturbehandlung:
-- Wenn Nutzer "nicht X" nach X sagt, entfernen Sie X
-- Wenn Nutzer "ich meine Y" nach X sagt, ersetzen Sie X durch Y
-
-Original-Transkript:
-{combined_transcript}
-
-Geben Sie NUR den polierten Text ohne Erklärung zurück."""
-            
-            # Use cached polish client or initialize once
-            if not self.polish_client:
-                from google import genai
-                api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-                self.polish_client = genai.Client(api_key=api_key)
-                logger.info("Polish client initialized and cached")
-            
-            # Get response from Gemini Flash LITE - FASTER MODEL
-            response = self.polish_client.models.generate_content(
-                model="gemini-2.5-flash-lite",  # Flash lite for fast polish
-                contents=polish_prompt
-            )
-            
-            polished = response.text.strip()
-            
-            logger.info(f"Polish complete. Output length: {len(polished)} characters")
-            logger.info("==================== POLISH COMPLETE ====================")
-            
-            # Send polished transcript to replace live version
-            await self.websocket.send(json.dumps({
-                "type": "polished_transcript",
-                "text": polished
-            }))
-            
-            await self.websocket.send(json.dumps({
-                "type": "status",
-                "message": "Abgeschlossen"
-            }))
-            
-        except Exception as e:
-            logger.error(f"Error during polish: {e}")
-            await self.websocket.send(json.dumps({
-                "type": "error",
-                "message": f"Fehler beim Polieren: {str(e)}"
-            }))
+        # NO POLISH - Just send completion status
+        await self.websocket.send(json.dumps({
+            "type": "status",
+            "message": "Aufnahme beendet"
+        }))
+    
+    async def clear_transcript(self):
+        """Clear the accumulative transcript"""
+        self.accumulative_transcript = ""
+        logger.info("Accumulative transcript cleared")
+        await self.websocket.send(json.dumps({
+            "type": "transcript_cleared",
+            "text": ""
+        }))
 
 
 # WebSocket server setup - UNCHANGED FROM WORKING VERSION
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 app = FastAPI()
 
-# CORS (configurable via env, defaults open)
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
-origins = [o.strip() for o in allowed_origins.split(",") if o.strip()]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins if origins != ["*"] else ["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Serve static files
+static_dir = Path(__file__).parent
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
 @app.get("/")
 async def root():
-    """Health-friendly root endpoint for Cloud Run"""
-    return JSONResponse({"status": "ok", "service": "radpair-german-backend"})
+    """Serve the RadPair Beta HTML page"""
+    return FileResponse(str(static_dir / "index_radpair_noPolish.html"))
 
 
-@app.get("/healthz")
-async def healthz():
-    return JSONResponse({"status": "ok"})
+@app.get("/index_radpair_noPolish.html")
+async def index():
+    """Serve the RadPair Beta HTML page"""
+    return FileResponse(str(static_dir / "index_radpair_noPolish.html"))
+
+
+@app.get("/RADPAIR-LOGO-WHITE.png")
+async def logo():
+    """Serve the RadPair logo"""
+    return FileResponse(str(static_dir / "RADPAIR-LOGO-WHITE.png"))
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for RadPair Beta"""
     await websocket.accept()
-    handler = RadPairHandler(websocket)
+    handler = RadPairHandlerNoPolish(websocket)
     
     try:
         # Initialize handler
@@ -405,6 +380,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     
                     elif data["type"] == "stop_recording":
                         await handler.stop_recording()
+                    
+                    elif data["type"] == "clear_transcript":
+                        await handler.clear_transcript()
                     
                     elif data["type"] == "get_study_types":
                         study_types = handler.load_study_types()
@@ -450,11 +428,11 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", os.environ.get("SERVER_PORT", 8080)))
-    logger.info(f"Starting RadPair German backend on 0.0.0.0:{port}")
-
+    logger.info("Starting RadPair Beta server (NO POLISH) on http://localhost:8768")
+    logger.info("UI available at http://localhost:8768/index_radpair_noPolish.html")
+    
     # Create audio recordings directory if it doesn't exist
     audio_dir = Path(__file__).parent / "audio_recordings"
     audio_dir.mkdir(exist_ok=True)
-
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+    
+    uvicorn.run(app, host="0.0.0.0", port=8768, log_level="info")
